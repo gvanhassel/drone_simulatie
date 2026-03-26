@@ -60,8 +60,11 @@ class WaypointManager:
 
     def assign_drones(self, drones: list) -> None:
         """
-        Wijs drones optimaal toe aan waypoints via het Hongaarse algoritme
-        (scipy.optimize.linear_sum_assignment op een kostenmatrix van afstanden).
+        Wijs drones optimaal toe aan waypoints.
+
+        Meer drones dan waypoints: elke drone gaat naar het dichtstbijzijnde waypoint
+        (meerdere drones per waypoint toegestaan).
+        Meer waypoints dan drones: Hongaars algoritme voor optimale 1-op-1 toewijzing.
         """
         waypoints = list(self._waypoints.values())
         if not waypoints or not drones:
@@ -70,25 +73,31 @@ class WaypointManager:
         n_drones = len(drones)
         n_waypoints = len(waypoints)
 
-        # Kostenmatrix: afstand drone i → waypoint j
-        cost = np.zeros((n_drones, n_waypoints), dtype=np.float64)
-        for i, drone in enumerate(drones):
-            for j, wp in enumerate(waypoints):
-                cost[i, j] = float(np.linalg.norm(drone.position - wp.position))
-
-        # Hongaars algoritme — minimaal totale reisafstand
-        drone_idxs, wp_idxs = linear_sum_assignment(cost)
-
         # Wis alle huidige toewijzingen
         for wp in waypoints:
             wp.assigned_drone_ids.clear()
 
-        # Stel nieuwe toewijzingen in
-        for di, wj in zip(drone_idxs, wp_idxs):
-            drone = drones[di]
-            wp = waypoints[wj]
-            wp.assigned_drone_ids.append(drone.id)
-            drone.set_target(wp.position)
+        if n_drones <= n_waypoints:
+            # Hongaars algoritme voor 1-op-1 toewijzing
+            cost = np.zeros((n_drones, n_waypoints), dtype=np.float64)
+            for i, drone in enumerate(drones):
+                for j, wp in enumerate(waypoints):
+                    cost[i, j] = float(np.linalg.norm(drone.position - wp.position))
+            drone_idxs, wp_idxs = linear_sum_assignment(cost)
+            for di, wj in zip(drone_idxs, wp_idxs):
+                drone = drones[di]
+                wp = waypoints[wj]
+                wp.assigned_drone_ids.append(drone.id)
+                drone.set_target(wp.position)
+        else:
+            # Meer drones dan waypoints: elk naar het dichtstbijzijnde waypoint
+            wp_positions = np.array([wp.position for wp in waypoints], dtype=np.float64)
+            for drone in drones:
+                dists = np.linalg.norm(wp_positions - drone.position.astype(np.float64), axis=1)
+                nearest_idx = int(np.argmin(dists))
+                nearest_wp = waypoints[nearest_idx]
+                nearest_wp.assigned_drone_ids.append(drone.id)
+                drone.set_target(nearest_wp.position)
 
     def check_arrivals(self, drones: list) -> list[Waypoint]:
         """
