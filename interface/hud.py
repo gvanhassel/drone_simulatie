@@ -32,9 +32,10 @@ class HUD:
         if self._font_small is None:
             import pygame
             pygame.font.init()
-            self._font_small = pygame.font.SysFont("monospace", 13)
-            self._font_medium = pygame.font.SysFont("monospace", 15)
-            self._font_large = pygame.font.SysFont("monospace", 18, bold=True)
+            # Gebruik pygame's ingebouwde font (geen fc-list/systeemfonts nodig)
+            self._font_small = pygame.font.Font(None, 16)
+            self._font_medium = pygame.font.Font(None, 19)
+            self._font_large = pygame.font.Font(None, 22)
 
     def update_fps(self, fps: float) -> None:
         self._fps_history.append(fps)
@@ -82,7 +83,7 @@ class HUD:
         divider()
 
         # ── Statistieken ──
-        state_label = "⏸ GEPAUZEERD" if operator_state.paused else "▶ ACTIEF"
+        state_label = "|| GEPAUZEERD" if operator_state.paused else "> ACTIEF"
         draw(state_label, color=self.WARN_COLOR if operator_state.paused else self.ACCENT_COLOR)
         draw(f"Drones:    {len(drones)}")
         draw(f"Waypoints: {waypoint_count}")
