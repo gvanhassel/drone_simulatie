@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "drone_simulatie"
+version = "0.1.0"
+description = "Drone zwerm simulatie met enkelvoudige operatorinterface"
+requires-python = ">=3.11"
+dependencies = [
+    "pygame>=2.5.0",
+    "numpy>=1.26.0",
+    "scipy>=1.11.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+]
+
+[project.scripts]
+drone-sim = "main:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["simulatie*", "piloot*", "interface*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
